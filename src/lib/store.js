@@ -24,7 +24,7 @@ const KEYS = {
   CHALLENGES: "ss_challenges_v1",
   APPLICATIONS: "ss_applications_v1",
   EVALUATIONS: "ss_evaluations_v2",
-  PILOTS: "ss_pilots_v2",
+  PILOTS: "ss_pilots_v3",
   PAYMENTS: "ss_payments_v2",
   VALIDATIONS: "ss_validations_v2",
   NOTIFICATIONS: "ss_notifications_v1",
@@ -455,7 +455,12 @@ const PILOT_MILESTONE_TEMPLATE = [
 ];
 
 function seedPilotList() {
-  return seedPilots.map((p) => ({ ...p, kpis: p.kpis.map((k) => ({ ...k })), milestones: p.milestones.map((m) => ({ ...m })) }));
+  return seedPilots.map((p) => ({
+    ...p,
+    kpis: p.kpis.map((k) => ({ ...k })),
+    milestones: p.milestones.map((m) => ({ ...m })),
+    risks: (p.risks || []).map((r) => ({ ...r })),
+  }));
 }
 
 export function getPilots() {
@@ -606,6 +611,44 @@ export function updateKpiActual(pilotId, kpiIndex, actual) {
       return { ...k, actual: numActual, passed };
     });
     return { ...p, kpis };
+  });
+  write(KEYS.PILOTS, list);
+  return list.find((p) => String(p.id) === String(pilotId));
+}
+
+// ── Risk Register ────────────────────────────────────────────────────────
+export function addPilotRisk(pilotId, { description, likelihood, mitigationOwner }) {
+  const list = getPilots().map((p) => {
+    if (String(p.id) !== String(pilotId)) return p;
+    const risks = p.risks || [];
+    const newRisk = {
+      id: risks.length ? Math.max(...risks.map((r) => r.id)) + 1 : 1,
+      description: description || "",
+      likelihood: likelihood || "Medium",
+      mitigationOwner: mitigationOwner || "",
+    };
+    return { ...p, risks: [...risks, newRisk] };
+  });
+  write(KEYS.PILOTS, list);
+  return list.find((p) => String(p.id) === String(pilotId));
+}
+
+export function updatePilotRisk(pilotId, riskId, patch) {
+  const list = getPilots().map((p) => {
+    if (String(p.id) !== String(pilotId)) return p;
+    const risks = (p.risks || []).map((r) =>
+      r.id === riskId ? { ...r, ...patch } : r
+    );
+    return { ...p, risks };
+  });
+  write(KEYS.PILOTS, list);
+  return list.find((p) => String(p.id) === String(pilotId));
+}
+
+export function removePilotRisk(pilotId, riskId) {
+  const list = getPilots().map((p) => {
+    if (String(p.id) !== String(pilotId)) return p;
+    return { ...p, risks: (p.risks || []).filter((r) => r.id !== riskId) };
   });
   write(KEYS.PILOTS, list);
   return list.find((p) => String(p.id) === String(pilotId));

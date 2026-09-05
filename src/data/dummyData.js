@@ -307,6 +307,26 @@ export const pilots = [
       { name: "Independent Validation", status: "upcoming", date: "2024-09-20" },
       { name: "Scale-up Decision", status: "upcoming", date: "2024-09-30" },
     ],
+    risks: [
+      {
+        id: 1,
+        description: "Sensor coverage shortfall in remote tribal hamlets due to terrain — 88 of 500 target points remain undeployed.",
+        likelihood: "High",
+        mitigationOwner: "TechVision Labs (Field Team Lead)",
+      },
+      {
+        id: 2,
+        description: "Monsoon-induced power outages may interrupt real-time data transmission from IoT nodes.",
+        likelihood: "Medium",
+        mitigationOwner: "Gram Panchayat IT Cell + TechVision Labs",
+      },
+      {
+        id: 3,
+        description: "Panchayat staff training completion rate at 62% — may affect user satisfaction KPI at final survey.",
+        likelihood: "Low",
+        mitigationOwner: "Rural Development Dept (District Coordinator)",
+      },
+    ],
   },
 ];
 

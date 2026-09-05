@@ -3,18 +3,29 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { addChallenge } from "../../lib/store";
 import { useAuth } from "../../context/AuthContext";
-import { CheckCircle, ChevronRight, Plus, Trash2, Save, Eye, Send, AlertCircle } from "lucide-react";
+import { CheckCircle, ChevronRight, Plus, Trash2, Save, Eye, Send, AlertCircle, Shield, Lock } from "lucide-react";
 
 const steps = ["Problem", "Requirements", "KPIs", "Review"];
 
 const departments = ["Urban Development Department", "Transport Department", "Rural Development Department", "Agriculture Department", "Health Department"];
 const locations = ["Bihar", "Delhi", "Maharashtra", "Karnataka", "Uttar Pradesh", "Rajasthan", "Tamil Nadu"];
 
+const CYBER_ITEMS = [
+  "End-to-end encryption (data in transit & at rest)",
+  "ISO 27001 / equivalent information security certification",
+  "CERT-In empanelled security audit",
+  "Role-based access control (RBAC) + audit logging",
+  "Incident response plan (24-hr notification SLA)",
+  "Penetration testing (bi-annual minimum)",
+];
+
 const defaultKPIs = [
   { name: "Accuracy / Effectiveness", target: ">90%", measurement: "Automated testing & validation" },
   { name: "Cost Reduction", target: ">20%", measurement: "Financial analysis vs baseline" },
   { name: "User Satisfaction", target: ">85%", measurement: "User survey" },
 ];
+
+const likelihoodColor = { Low: "#16a34a", Medium: "#d97706", High: "#dc2626" };
 
 export default function CreateChallengePage() {
   const navigate = useNavigate();
@@ -25,9 +36,20 @@ export default function CreateChallengePage() {
   const [form, setForm] = useState({
     title: "", department: "", location: "", description: "", currentSituation: "", expectedOutcome: "", targetUsers: "",
     budget: "", pilotDuration: "", targetGeo: "", capabilities: "", constraints: "",
+    // New fields — Feature 1 & 2
+    ipOwnership: "",
+    dataLocalization: false,
+    cyberChecklist: Array(CYBER_ITEMS.length).fill(false),
+    waiveTurnoverRequirement: false,
   });
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const toggleCyber = (i) => setForm(f => {
+    const arr = [...f.cyberChecklist];
+    arr[i] = !arr[i];
+    return { ...f, cyberChecklist: arr };
+  });
 
   const addKPI = () => setKpis(k => [...k, { name: "", target: "", measurement: "" }]);
   const updateKPI = (i, field, val) => setKpis(k => k.map((kpi, idx) => idx === i ? { ...kpi, [field]: val } : kpi));
@@ -58,9 +80,16 @@ export default function CreateChallengePage() {
         governmentSupport: user?.department ? `Coordination via ${user.department}` : "Departmental coordination",
         deliverables: "Functional pilot, periodic reports, final impact assessment",
       },
+      // New fields
+      ipOwnership: form.ipOwnership || "Not specified",
+      dataLocalization: form.dataLocalization,
+      cyberChecklist: form.cyberChecklist,
+      waiveTurnoverRequirement: form.waiveTurnoverRequirement,
     });
     navigate("/government/challenges");
   };
+
+  const cyberPassCount = form.cyberChecklist.filter(Boolean).length;
 
   const StepCircle = ({ idx }) => {
     const done = idx < step;
@@ -173,6 +202,137 @@ export default function CreateChallengePage() {
                 <textarea className="form-input form-textarea" rows={3} placeholder="e.g. Data must be stored in India, solution must work in low-bandwidth environments..." value={form.constraints} onChange={e => update("constraints", e.target.value)} />
               </div>
             </div>
+
+            {/* ── Data, IP & Cybersecurity Section ── */}
+            <div style={{ marginTop: 28, padding: "20px 24px", background: "linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)", border: "1.5px solid #bfdbfe", borderRadius: "var(--radius-lg)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                <div style={{ width: 36, height: 36, background: "#2563eb", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Shield size={18} color="#fff" />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, color: "#1e40af", fontSize: "1rem" }}>Data, IP & Cybersecurity</h4>
+                  <p style={{ margin: 0, fontSize: "0.78rem", color: "#3b82f6" }}>Compliance requirements startups must meet for this challenge</p>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 20 }}>
+                {/* IP Ownership */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ color: "#1e40af" }}>IP Ownership *</label>
+                  <select
+                    className="form-input"
+                    value={form.ipOwnership}
+                    onChange={e => update("ipOwnership", e.target.value)}
+                    style={{ borderColor: "#bfdbfe" }}
+                  >
+                    <option value="">Select IP ownership model</option>
+                    <option value="Govt-owned">Govt-owned — All IP vests with Government</option>
+                    <option value="Startup-owned">Startup-owned — Government gets perpetual license</option>
+                    <option value="Joint">Joint Ownership — Shared IP with defined terms</option>
+                  </select>
+                  <span className="form-hint">This will appear in the pilot contract and on the public challenge page.</span>
+                </div>
+
+                {/* Data Localization */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label className="form-label" style={{ color: "#1e40af" }}>Data Localization</label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: form.dataLocalization ? "#dbeafe" : "#fff", border: `1.5px solid ${form.dataLocalization ? "#3b82f6" : "#e2e8f0"}`, borderRadius: "var(--radius-md)", cursor: "pointer", transition: "all 0.2s" }}>
+                    <input
+                      type="checkbox"
+                      checked={form.dataLocalization}
+                      onChange={e => update("dataLocalization", e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: "#2563eb", cursor: "pointer" }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.875rem", color: form.dataLocalization ? "#1e40af" : "var(--text-primary)" }}>
+                        Require Data Localization
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 2 }}>
+                        All citizen data must be stored on servers physically located in India
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Cybersecurity Checklist */}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <label className="form-label" style={{ color: "#1e40af", marginBottom: 0 }}>Cybersecurity Requirements</label>
+                  <span style={{
+                    fontSize: "0.75rem", fontWeight: 700, padding: "3px 10px", borderRadius: 20,
+                    background: cyberPassCount === CYBER_ITEMS.length ? "#dcfce7" : cyberPassCount > 2 ? "#fef3c7" : "#fee2e2",
+                    color: cyberPassCount === CYBER_ITEMS.length ? "#16a34a" : cyberPassCount > 2 ? "#d97706" : "#dc2626"
+                  }}>
+                    {cyberPassCount}/{CYBER_ITEMS.length} selected
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {CYBER_ITEMS.map((item, i) => (
+                    <label
+                      key={i}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                        background: form.cyberChecklist[i] ? "#eff6ff" : "#fff",
+                        border: `1.5px solid ${form.cyberChecklist[i] ? "#93c5fd" : "#e2e8f0"}`,
+                        borderRadius: "var(--radius-md)", cursor: "pointer", transition: "all 0.2s",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.cyberChecklist[i]}
+                        onChange={() => toggleCyber(i)}
+                        style={{ width: 16, height: 16, accentColor: "#2563eb", cursor: "pointer", flexShrink: 0 }}
+                      />
+                      <span style={{ fontSize: "0.85rem", color: form.cyberChecklist[i] ? "#1e40af" : "var(--text-secondary)", fontWeight: form.cyberChecklist[i] ? 600 : 400 }}>
+                        {item}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Waive Turnover Requirement — Feature 2 */}
+              <div style={{ marginTop: 20, padding: "16px 18px", background: form.waiveTurnoverRequirement ? "#dbeafe" : "#fff", border: `2px solid ${form.waiveTurnoverRequirement ? "#3b82f6" : "#bfdbfe"}`, borderRadius: "var(--radius-md)", transition: "all 0.25s" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                  <div style={{ width: 32, height: 32, background: form.waiveTurnoverRequirement ? "#2563eb" : "#e2e8f0", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.25s" }}>
+                    <Lock size={15} color={form.waiveTurnoverRequirement ? "#fff" : "var(--text-muted)"} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: form.waiveTurnoverRequirement ? "#1e40af" : "var(--text-primary)" }}>
+                          Waive Prior Turnover Requirement
+                        </div>
+                        <div style={{ fontSize: "0.78rem", color: form.waiveTurnoverRequirement ? "#3b82f6" : "var(--text-muted)", marginTop: 3, lineHeight: 1.5 }}>
+                          Enables early-stage startups (without ₹40L+ prior turnover) to apply. Encourages deep-tech and social-impact innovations.
+                        </div>
+                      </div>
+                      <label style={{ position: "relative", width: 48, height: 26, cursor: "pointer", flexShrink: 0, marginLeft: 16 }}>
+                        <input
+                          type="checkbox"
+                          checked={form.waiveTurnoverRequirement}
+                          onChange={e => update("waiveTurnoverRequirement", e.target.checked)}
+                          style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+                        />
+                        <span style={{
+                          position: "absolute", inset: 0, borderRadius: 13,
+                          background: form.waiveTurnoverRequirement ? "#2563eb" : "#cbd5e1",
+                          transition: "background 0.25s",
+                          display: "block"
+                        }} />
+                        <span style={{
+                          position: "absolute", top: 3, left: form.waiveTurnoverRequirement ? 26 : 3,
+                          width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                          transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                          display: "block"
+                        }} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -249,6 +409,68 @@ export default function CreateChallengePage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* ── Data, IP & Cybersecurity Review Summary ── */}
+            <div style={{ marginTop: 24, padding: "18px 20px", background: "linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)", border: "1.5px solid #bfdbfe", borderRadius: "var(--radius-lg)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                <Shield size={17} color="#2563eb" />
+                <h4 style={{ margin: 0, color: "#1e40af", fontSize: "0.95rem" }}>Data, IP & Cybersecurity Summary</h4>
+              </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+                {/* IP Ownership Badge */}
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px",
+                  background: "#dbeafe", color: "#1e40af", borderRadius: 20, fontWeight: 700, fontSize: "0.8rem", border: "1px solid #93c5fd"
+                }}>
+                  🔑 IP: {form.ipOwnership || "Not specified"}
+                </span>
+
+                {/* Data Localization Badge */}
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px",
+                  background: form.dataLocalization ? "#dcfce7" : "#f1f5f9",
+                  color: form.dataLocalization ? "#16a34a" : "var(--text-muted)",
+                  borderRadius: 20, fontWeight: 600, fontSize: "0.8rem",
+                  border: `1px solid ${form.dataLocalization ? "#86efac" : "#e2e8f0"}`
+                }}>
+                  🇮🇳 Data Localization: {form.dataLocalization ? "Required" : "Not required"}
+                </span>
+
+                {/* Turnover Waiver Badge */}
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px",
+                  background: form.waiveTurnoverRequirement ? "#fef3c7" : "#f1f5f9",
+                  color: form.waiveTurnoverRequirement ? "#d97706" : "var(--text-muted)",
+                  borderRadius: 20, fontWeight: 600, fontSize: "0.8rem",
+                  border: `1px solid ${form.waiveTurnoverRequirement ? "#fcd34d" : "#e2e8f0"}`
+                }}>
+                  ⚡ Turnover Requirement: {form.waiveTurnoverRequirement ? "Waived for startups" : "Standard requirement"}
+                </span>
+
+                {/* Cyber Checklist Badge */}
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px",
+                  background: cyberPassCount === CYBER_ITEMS.length ? "#dcfce7" : cyberPassCount > 0 ? "#fef3c7" : "#fee2e2",
+                  color: cyberPassCount === CYBER_ITEMS.length ? "#16a34a" : cyberPassCount > 0 ? "#d97706" : "#dc2626",
+                  borderRadius: 20, fontWeight: 700, fontSize: "0.8rem",
+                  border: `1px solid ${cyberPassCount === CYBER_ITEMS.length ? "#86efac" : cyberPassCount > 0 ? "#fcd34d" : "#fca5a5"}`
+                }}>
+                  🔒 Cyber Requirements: {cyberPassCount}/{CYBER_ITEMS.length}
+                </span>
+              </div>
+
+              {/* Individual cyber items */}
+              {cyberPassCount > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {CYBER_ITEMS.map((item, i) => form.cyberChecklist[i] && (
+                    <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", background: "#eff6ff", color: "#1e40af", borderRadius: 20, fontSize: "0.72rem", fontWeight: 600, border: "1px solid #bfdbfe" }}>
+                      <CheckCircle size={11} /> {item.split(" (")[0].split(" /")[0]}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: 24, padding: "16px", background: "#fef3c7", borderRadius: "var(--radius-md)", border: "1px solid #fcd34d" }}>

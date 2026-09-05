@@ -3,9 +3,18 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useChallenges, addApplication, hasApplied } from "../../lib/store";
 import { useAuth } from "../../context/AuthContext";
-import { MapPin, Clock, DollarSign, Calendar, Users, ArrowLeft, CheckCircle, Target } from "lucide-react";
+import { MapPin, Clock, DollarSign, Calendar, ArrowLeft, CheckCircle, Shield, Lock } from "lucide-react";
 
 const statusColor = { Open: "badge-success", Pilot: "badge-primary", Screening: "badge-warning", Evaluation: "badge-purple", Completed: "badge-neutral" };
+
+const CYBER_ITEMS = [
+  "End-to-end encryption (data in transit & at rest)",
+  "ISO 27001 / equivalent information security certification",
+  "CERT-In empanelled security audit",
+  "Role-based access control (RBAC) + audit logging",
+  "Incident response plan (24-hr notification SLA)",
+  "Penetration testing (bi-annual minimum)",
+];
 
 export default function ChallengeDetailsPage() {
   const { id } = useParams();
@@ -42,6 +51,13 @@ export default function ChallengeDetailsPage() {
     </div>
   );
 
+  // Derived helpers for new fields
+  const hasSecuritySection = challenge.ipOwnership || challenge.dataLocalization || challenge.waiveTurnoverRequirement ||
+    (Array.isArray(challenge.cyberChecklist) && challenge.cyberChecklist.some(Boolean));
+  const checkedCyberItems = Array.isArray(challenge.cyberChecklist)
+    ? CYBER_ITEMS.filter((_, i) => challenge.cyberChecklist[i])
+    : [];
+
   return (
     <div>
       <PublicNavbar />
@@ -73,6 +89,14 @@ export default function ChallengeDetailsPage() {
               </div>
             ))}
           </div>
+
+          {/* Turnover waiver notice in hero */}
+          {challenge.waiveTurnoverRequirement && (
+            <div style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", borderRadius: 24 }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fbbf24" }}>⚡ Turnover Requirement Waived</span>
+              <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.7)" }}>— Early-stage startups can apply</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -138,6 +162,63 @@ export default function ChallengeDetailsPage() {
               <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>{challenge.pilotInfo.deliverables}</div>
             </div>
           </div>
+
+          {/* ── Data, IP & Cybersecurity Section (Feature 1) ── */}
+          {hasSecuritySection && (
+            <div className="card card-padded" style={{ border: "1.5px solid #bfdbfe", background: "linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                <div style={{ width: 36, height: 36, background: "#2563eb", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Shield size={18} color="#fff" />
+                </div>
+                <h3 style={{ margin: 0, color: "#1e40af" }}>Data, IP & Cybersecurity Requirements</h3>
+              </div>
+
+              {/* Badges row */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: checkedCyberItems.length > 0 ? 18 : 0 }}>
+                {challenge.ipOwnership && challenge.ipOwnership !== "Not specified" && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "#dbeafe", color: "#1e40af", borderRadius: 24, fontWeight: 700, fontSize: "0.82rem", border: "1px solid #93c5fd" }}>
+                    🔑 IP Ownership: {challenge.ipOwnership}
+                  </span>
+                )}
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px",
+                  background: challenge.dataLocalization ? "#dcfce7" : "#f1f5f9",
+                  color: challenge.dataLocalization ? "#16a34a" : "var(--text-muted)",
+                  borderRadius: 24, fontWeight: 600, fontSize: "0.82rem",
+                  border: `1px solid ${challenge.dataLocalization ? "#86efac" : "#e2e8f0"}`
+                }}>
+                  🇮🇳 Data Localization: {challenge.dataLocalization ? "Required" : "Not required"}
+                </span>
+                {challenge.waiveTurnoverRequirement && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "#fef3c7", color: "#d97706", borderRadius: 24, fontWeight: 700, fontSize: "0.82rem", border: "1px solid #fcd34d" }}>
+                    ⚡ Turnover Requirement Waived
+                  </span>
+                )}
+                {checkedCyberItems.length > 0 && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "#dcfce7", color: "#16a34a", borderRadius: 24, fontWeight: 700, fontSize: "0.82rem", border: "1px solid #86efac" }}>
+                    🔒 {checkedCyberItems.length}/{CYBER_ITEMS.length} Cybersecurity Controls Required
+                  </span>
+                )}
+              </div>
+
+              {/* Individual cyber requirements */}
+              {checkedCyberItems.length > 0 && (
+                <div>
+                  <div style={{ fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#3b82f6", fontWeight: 700, marginBottom: 10 }}>
+                    Required Cybersecurity Controls
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {checkedCyberItems.map((item, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", background: "#fff", borderRadius: "var(--radius-md)", border: "1px solid #bfdbfe" }}>
+                        <CheckCircle size={16} color="#2563eb" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: "0.85rem", color: "#1e40af", fontWeight: 500 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -171,7 +252,36 @@ export default function ChallengeDetailsPage() {
                 <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{m.val}</span>
               </div>
             ))}
+
+            {/* Turnover waiver badge in sidebar (Feature 2) */}
+            {challenge.waiveTurnoverRequirement && (
+              <div style={{ marginTop: 14, padding: "10px 14px", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: "var(--radius-md)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Lock size={14} color="#d97706" />
+                  <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#92400e" }}>Turnover Requirement Waived</span>
+                </div>
+                <p style={{ fontSize: "0.75rem", color: "#78350f", margin: "4px 0 0", lineHeight: 1.5 }}>
+                  This challenge is open to early-stage startups without the standard turnover requirement. Apply even if you're pre-revenue.
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* IP Ownership mini-card */}
+          {challenge.ipOwnership && challenge.ipOwnership !== "Not specified" && (
+            <div className="card card-padded" style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <Shield size={15} color="#2563eb" />
+                <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1e40af" }}>IP Ownership Model</span>
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "#3b82f6", margin: 0, fontWeight: 600 }}>{challenge.ipOwnership}</p>
+              <p style={{ fontSize: "0.75rem", color: "#60a5fa", margin: "4px 0 0", lineHeight: 1.5 }}>
+                {challenge.ipOwnership === "Govt-owned" && "All intellectual property developed during the pilot will vest with the Government."}
+                {challenge.ipOwnership === "Startup-owned" && "Startup retains IP; Government receives a perpetual, royalty-free license."}
+                {challenge.ipOwnership === "Joint" && "IP is jointly owned with terms defined in the pilot contract."}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
