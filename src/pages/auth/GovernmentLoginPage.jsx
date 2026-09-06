@@ -13,11 +13,11 @@ export default function GovernmentLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const result = login(email, password, "government");
+    const result = await login(email, password, "government");
     setLoading(false);
     if (result.ok) {
       navigate("/government/dashboard");

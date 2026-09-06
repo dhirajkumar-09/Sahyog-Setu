@@ -20,11 +20,11 @@ export default function StartupLoginPage() {
   const [regDpiit, setRegDpiit] = useState("");
   const [regPassword, setRegPassword] = useState("");
 
-  const handleLogin = (e) => {
+  const handleLogin = async(e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const result = login(email, password, "startup");
+    const result = await login(email, password, "startup");
     setLoading(false);
     if (result.ok) {
       navigate("/startup/dashboard");

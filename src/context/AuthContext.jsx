@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { authenticate, registerUser, getSession, setSession, clearSession, updateProfile as storeUpdateProfile } from "../lib/store";
+import { supabase } from "../lib/supabaseClient";
 
 const AuthContext = createContext(null);
 
@@ -7,46 +7,98 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
 
-  // Restore session on first load (e.g. after a page refresh)
+  const loadProfile = async (authUser) => {
+    if (!authUser) return null;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
+    if (error) {
+      console.error("Failed to load profile:", error);
+      return null;
+    }
+    return { ...data, email: authUser.email };
+  };
+
   useEffect(() => {
-    setUser(getSession());
-    setReady(true);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await loadProfile(session.user);
+        setUser(profile);
+      }
+      setReady(true);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const profile = await loadProfile(session.user);
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Validates email + password against the stored accounts.
-  // Returns { ok: true } on success, or { ok: false, error } on failure —
-  // the calling page decides what to show the user.
-  const login = (email, password, expectedRole) => {
-    const result = authenticate(email, password, expectedRole);
-    if (result.ok) {
-      setSession(result.user);
-      setUser(result.user);
+  const login = async (email, password, expectedRole) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, error: error.message };
+
+    const profile = await loadProfile(data.user);
+    if (expectedRole && profile?.role !== expectedRole) {
+      await supabase.auth.signOut();
+      return { ok: false, error: `This account is not registered as a ${expectedRole}.` };
     }
-    return result;
+    setUser(profile);
+    return { ok: true, user: profile };
   };
 
-  // Creates a brand-new account and logs the person straight in.
-  const register = (fields) => {
-    const result = registerUser(fields);
-    if (result.ok) {
-      setSession(result.user);
-      setUser(result.user);
-    }
-    return result;
+  const register = async (fields) => {
+    const { email, password, role, name, company, sector, dpiit, department, designation, expertise, organization } = fields;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) return { ok: false, error: error.message };
+
+    const profileData = { id: data.user.id, email, role, name };
+    if (company) profileData.company = company;
+    if (sector) profileData.sector = sector;
+    if (dpiit) profileData.dpiit_number = dpiit;
+    if (department) profileData.department = department;
+    if (designation) profileData.designation = designation;
+    if (expertise) profileData.expertise = expertise;
+    if (organization) profileData.organization = organization;
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .insert(profileData)
+      .select()
+      .single();
+    if (profileError) return { ok: false, error: profileError.message };
+
+    setUser({ ...profile, email });
+    return { ok: true, user: profile };
   };
 
-  const logout = () => {
-    clearSession();
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
-  // Persists profile / settings changes and keeps the in-memory user (and
-  // therefore every page reading useAuth()) instantly in sync.
-  const updateProfile = (patch) => {
+  const updateProfile = async (patch) => {
     if (!user) return null;
-    const updated = storeUpdateProfile(user.id, patch);
-    setUser(updated);
-    return updated;
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", user.id)
+      .select()
+      .single();
+    if (error) {
+      console.error("Failed to update profile:", error);
+      return null;
+    }
+    setUser({ ...data, email: user.email });
+    return data;
   };
 
   return (
