@@ -292,6 +292,7 @@ export const pilots = [
     startDate: "2024-06-28",
     endDate: "2024-09-25",
     contractValue: "₹25,00,000",
+    pilotMode: "full",
     kpis: [
       { name: "Detection Accuracy", target: 90, actual: 94, unit: "%", passed: true },
       { name: "Response Time to Alert", target: 4, actual: 2.4, unit: "hrs", passed: true, lowerIsBetter: true },

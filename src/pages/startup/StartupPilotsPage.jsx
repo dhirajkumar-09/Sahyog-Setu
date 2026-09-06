@@ -52,6 +52,15 @@ export default function StartupPilotsPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
               <h3>{pilot.title}</h3>
               <span className={`badge ${pilot.status === "Completed" ? "badge-neutral" : "badge-success"}`}>● {pilot.status}</span>
+              {pilot.pilotMode === "sandbox" ? (
+                <span style={{ background: "#f5f3ff", color: "#7c3aed", border: "1.5px solid #c4b5fd", borderRadius: 20, padding: "2px 10px", fontSize: "0.73rem", fontWeight: 700 }}>
+                  🧪 Sandbox
+                </span>
+              ) : (
+                <span style={{ background: "#eff6ff", color: "#2563eb", border: "1.5px solid #93c5fd", borderRadius: 20, padding: "2px 10px", fontSize: "0.73rem", fontWeight: 700 }}>
+                  🚀 Full Pilot
+                </span>
+              )}
             </div>
             <p className="text-sm text-secondary">{pilot.department} · {pilot.location}</p>
             <p className="text-sm text-secondary" style={{ marginTop: 2 }}>Contract Value: <strong style={{ color: "var(--success)" }}>{pilot.contractValue}</strong></p>

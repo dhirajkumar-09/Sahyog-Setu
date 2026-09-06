@@ -41,6 +41,8 @@ export default function CreateChallengePage() {
     dataLocalization: false,
     cyberChecklist: Array(CYBER_ITEMS.length).fill(false),
     waiveTurnoverRequirement: false,
+    // Feature 3 — Pilot Mode
+    pilotMode: "full",
   });
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -85,6 +87,8 @@ export default function CreateChallengePage() {
       dataLocalization: form.dataLocalization,
       cyberChecklist: form.cyberChecklist,
       waiveTurnoverRequirement: form.waiveTurnoverRequirement,
+      // Feature 3
+      pilotMode: form.pilotMode || "full",
     });
     navigate("/government/challenges");
   };
@@ -188,6 +192,88 @@ export default function CreateChallengePage() {
                   <option>75 Days</option><option>90 Days</option><option>120 Days</option>
                 </select>
               </div>
+
+              {/* ── Pilot Mode Selector — Feature 3 ── */}
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                <label className="form-label">Pilot Mode *</label>
+                <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: 12, marginTop: -4 }}>
+                  Select how the pilot will be conducted. Sandbox is lower-risk; Full Pilot involves live deployment with real users.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  {[
+                    {
+                      value: "sandbox",
+                      icon: "🧪",
+                      title: "Sandbox Pilot",
+                      subtitle: "Controlled, isolated environment",
+                      bullets: [
+                        "No live citizen data",
+                        "Simulated / anonymised datasets",
+                        "Typically 30–45 days",
+                        "Lower risk, faster iteration",
+                        "Ideal for early-stage validation",
+                      ],
+                      color: "#7c3aed",
+                      bg: "#f5f3ff",
+                      border: "#c4b5fd",
+                    },
+                    {
+                      value: "full",
+                      icon: "🚀",
+                      title: "Full Pilot",
+                      subtitle: "Live deployment with real users",
+                      bullets: [
+                        "Real citizen / operational data",
+                        "Production-grade infrastructure",
+                        "Typically 60–90 days",
+                        "Full KPI tracking & reporting",
+                        "Scale-up decision at completion",
+                      ],
+                      color: "#2563eb",
+                      bg: "#eff6ff",
+                      border: "#93c5fd",
+                    },
+                  ].map((opt) => {
+                    const selected = form.pilotMode === opt.value;
+                    return (
+                      <label
+                        key={opt.value}
+                        style={{
+                          display: "flex", flexDirection: "column", gap: 10,
+                          padding: "18px 20px", borderRadius: "var(--radius-lg)",
+                          border: `2px solid ${selected ? opt.color : opt.border}`,
+                          background: selected ? opt.bg : "#fff",
+                          cursor: "pointer", transition: "all 0.2s",
+                          boxShadow: selected ? `0 0 0 3px ${opt.color}22` : "none",
+                        }}
+                        onClick={() => update("pilotMode", opt.value)}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <input
+                            type="radio"
+                            name="pilotMode"
+                            value={opt.value}
+                            checked={selected}
+                            onChange={() => update("pilotMode", opt.value)}
+                            style={{ accentColor: opt.color, width: 16, height: 16, flexShrink: 0 }}
+                          />
+                          <span style={{ fontSize: "1.4rem" }}>{opt.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "0.95rem", color: selected ? opt.color : "var(--text-primary)" }}>{opt.title}</div>
+                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{opt.subtitle}</div>
+                          </div>
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+                          {opt.bullets.map((b, i) => (
+                            <li key={i} style={{ fontSize: "0.8rem", color: selected ? opt.color : "var(--text-secondary)" }}>{b}</li>
+                          ))}
+                        </ul>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                 <label className="form-label">Target Geography *</label>
                 <input className="form-input" placeholder="e.g. 2 wards of Patna Municipal Corporation, Bihar" value={form.targetGeo} onChange={e => update("targetGeo", e.target.value)} />

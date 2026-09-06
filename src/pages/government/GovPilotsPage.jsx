@@ -235,6 +235,15 @@ export default function GovPilotsPage() {
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <span className={`badge ${pilot.status === "Completed" ? "badge-neutral" : "badge-success"}`}>● {pilot.status}</span>
+            {pilot.pilotMode === "sandbox" ? (
+              <span style={{ background: "#f5f3ff", color: "#7c3aed", border: "1.5px solid #c4b5fd", borderRadius: 20, padding: "2px 10px", fontSize: "0.73rem", fontWeight: 700 }}>
+                🧪 Sandbox
+              </span>
+            ) : (
+              <span style={{ background: "#eff6ff", color: "#2563eb", border: "1.5px solid #93c5fd", borderRadius: 20, padding: "2px 10px", fontSize: "0.73rem", fontWeight: 700 }}>
+                🚀 Full Pilot
+              </span>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={() => navigate("/government/payments")}>Payments</button>
             <button className="btn btn-secondary btn-sm" onClick={() => navigate("/government/validation")}>
               View Validation <ArrowRight size={13} />

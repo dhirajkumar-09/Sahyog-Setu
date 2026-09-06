@@ -23,8 +23,8 @@ const KEYS = {
   SESSION: "ss_session_v1",
   CHALLENGES: "ss_challenges_v1",
   APPLICATIONS: "ss_applications_v1",
-  EVALUATIONS: "ss_evaluations_v2",
-  PILOTS: "ss_pilots_v3",
+  EVALUATIONS: "ss_evaluations_v3",
+  PILOTS: "ss_pilots_v4",
   PAYMENTS: "ss_payments_v2",
   VALIDATIONS: "ss_validations_v2",
   NOTIFICATIONS: "ss_notifications_v1",
@@ -102,12 +102,23 @@ const DEMO_USERS = [
     password: "eval@123",
     avatar: "PN",
   },
+  {
+    id: "u-eval-demo-2",
+    role: "evaluator",
+    name: "Prof. Amit Sharma",
+    expertise: "Public Policy & Management",
+    organization: "IIM Ahmedabad",
+    email: "amit.sharma@iima.ac.in",
+    password: "eval2@123",
+    avatar: "AS2",
+  },
 ];
 
 export const DEMO_CREDENTIALS = {
   government: { email: DEMO_USERS[0].email, password: DEMO_USERS[0].password },
   startup: { email: DEMO_USERS[1].email, password: DEMO_USERS[1].password },
   evaluator: { email: DEMO_USERS[2].email, password: DEMO_USERS[2].password },
+  evaluator2: { email: DEMO_USERS[3].email, password: DEMO_USERS[3].password },
 };
 
 // ── Users ───────────────────────────────────────────────────────────────
@@ -327,18 +338,44 @@ const DEFAULT_CRITERIA = [
   { name: "Team Capability", weight: 15, description: "Team experience and capability" },
 ];
 
+
 function seedEvaluationList() {
-  // Normalize the dummy evaluations into the same shape createEvaluation() produces.
-  return seedEvaluations.map((e) => ({
-    evaluatorName: "Dr. Priya Nair",
-    comments: "",
-    strengths: "",
-    risks: "",
-    completedDate: e.status === "Completed" ? e.deadline : null,
-    recommendation: e.recommendation === "Shortlist" ? "Shortlist" : e.recommendation || "",
-    ...e,
-    criteria: e.criteria.map((c) => ({ ...c })),
-  }));
+  // Normalize the dummy evaluations into the same shape assignEvaluation() produces.
+  // Each application gets 2 evaluation records (multi-evaluator feature).
+  const eval1Users = [DEMO_USERS[2], DEMO_USERS[3]]; // Dr. Priya Nair, Prof. Amit Sharma
+  const result = [];
+  seedEvaluations.forEach((e, idx) => {
+    const base = {
+      comments: "",
+      strengths: "",
+      risks: "",
+      completedDate: e.status === "Completed" ? e.deadline : null,
+      recommendation: e.recommendation === "Shortlist" ? "Shortlist" : e.recommendation || "",
+      ...e,
+      criteria: e.criteria.map((c) => ({ ...c })),
+    };
+    // Evaluator 1 (from seed data)
+    result.push({
+      ...base,
+      evaluatorId: eval1Users[0].id,
+      evaluatorName: eval1Users[0].name,
+      evaluatorSlot: 1,
+    });
+    // Evaluator 2 — pending by default for seed data
+    result.push({
+      ...base,
+      id: (e.id ?? idx + 1) * 100 + 1, // unique id
+      evaluatorId: eval1Users[1].id,
+      evaluatorName: eval1Users[1].name,
+      evaluatorSlot: 2,
+      status: "Pending",
+      totalScore: null,
+      completedDate: null,
+      recommendation: "",
+      criteria: e.criteria.map((c) => ({ ...c, score: null })),
+    });
+  });
+  return result;
 }
 
 export function getEvaluations() {
@@ -354,29 +391,34 @@ export function getEvaluationById(id) {
   return getEvaluations().find((e) => String(e.id) === String(id));
 }
 
-// Creates a Pending evaluation for an application, if one doesn't exist yet.
+// Creates TWO Pending evaluation records (one per evaluator) for an application.
+// Real-world: prevents single-evaluator bias by averaging two independent scores.
 export function assignEvaluation(applicationId) {
   const list = getEvaluations();
-  const existing = list.find((e) => String(e.applicationId) === String(applicationId));
-  if (existing) return existing;
+  const existing = list.filter((e) => String(e.applicationId) === String(applicationId));
+  if (existing.length > 0) return existing[0]; // already assigned
 
   const app = getApplicationById(applicationId);
   if (!app) return null;
-  const evaluator = getUsers().find((u) => u.role === "evaluator") || DEMO_USERS[2];
+
+  const allUsers = getUsers();
+  const evaluators = allUsers.filter((u) => u.role === "evaluator");
+  // Fall back to demo evaluators if none registered
+  const eval1 = evaluators[0] || DEMO_USERS[2];
+  const eval2 = evaluators[1] || DEMO_USERS[3];
+
   const deadline = new Date();
   deadline.setDate(deadline.getDate() + 10);
+  const deadlineStr = deadline.toISOString().slice(0, 10);
 
-  const evalRecord = {
-    id: nextId(list),
+  const baseRecord = {
     applicationId: app.id,
     challengeId: app.challengeId,
     challengeTitle: app.challengeTitle,
     department: app.department,
     startupName: app.startupName,
-    evaluatorId: evaluator.id,
-    evaluatorName: evaluator.name,
     status: "Pending",
-    deadline: deadline.toISOString().slice(0, 10),
+    deadline: deadlineStr,
     criteria: DEFAULT_CRITERIA.map((c) => ({ ...c, score: null })),
     comments: "",
     strengths: "",
@@ -384,14 +426,30 @@ export function assignEvaluation(applicationId) {
     recommendation: "",
     totalScore: null,
     completedDate: null,
+    evaluatorSlot: 1,
   };
-  write(KEYS.EVALUATIONS, [evalRecord, ...list]);
-  return evalRecord;
+
+  const record1 = { ...baseRecord, id: nextId(list), evaluatorId: eval1.id, evaluatorName: eval1.name, evaluatorSlot: 1 };
+  const record2 = { ...baseRecord, id: nextId([...list, record1]), evaluatorId: eval2.id, evaluatorName: eval2.name, evaluatorSlot: 2 };
+
+  write(KEYS.EVALUATIONS, [...list, record1, record2]);
+  return record1;
 }
 
-// Evaluator submits scores + recommendation. Automatically pushes the linked
-// application forward: Shortlist -> "Shortlisted", Waitlist -> stays in
-// evaluation, Reject -> "Not Selected".
+// Returns all eval records for a given applicationId
+export function getEvaluationsByApplicationId(applicationId) {
+  return getEvaluations().filter((e) => String(e.applicationId) === String(applicationId));
+}
+
+// Computes average score when both evaluators have submitted
+export function getAverageScore(applicationId) {
+  const evals = getEvaluationsByApplicationId(applicationId).filter((e) => e.status === "Completed" && e.totalScore != null);
+  if (!evals.length) return null;
+  return Math.round(evals.reduce((s, e) => s + e.totalScore, 0) / evals.length);
+}
+
+// Evaluator submits scores + recommendation. When BOTH evaluators have submitted,
+// average score is computed and the application is advanced automatically.
 export function submitEvaluation(evaluationId, { criteria, comments, strengths, risks, recommendation }) {
   const list = getEvaluations();
   const ev = list.find((e) => String(e.id) === String(evaluationId));
@@ -409,37 +467,59 @@ export function submitEvaluation(evaluationId, { criteria, comments, strengths, 
     status: "Completed",
     completedDate: todayISO(),
   };
-  write(KEYS.EVALUATIONS, list.map((e) => (String(e.id) === String(evaluationId) ? updated : e)));
+  const newList = list.map((e) => (String(e.id) === String(evaluationId) ? updated : e));
+  write(KEYS.EVALUATIONS, newList);
 
+  // ── Multi-evaluator check: advance application only when ALL evaluators done ──
   if (ev.applicationId) {
-    if (recommendation === "Shortlist") {
-      advanceApplicationStage(ev.applicationId, "Shortlisted", "Shortlisted");
-      pushNotification("startup", {
-        type: "shortlist",
-        message: `Great news! Your application for ${ev.challengeTitle} has been shortlisted (score: ${totalScore}/100)`,
-        link: "/startup/applications",
+    const allEvals = newList.filter((e) => String(e.applicationId) === String(ev.applicationId));
+    const allDone = allEvals.length > 0 && allEvals.every((e) => e.status === "Completed");
+
+    if (allDone) {
+      // Average score from all submitted evaluations
+      const avgScore = Math.round(allEvals.reduce((s, e) => s + (e.totalScore || 0), 0) / allEvals.length);
+      // Consensus recommendation: if majority say Shortlist → Shortlist, else Reject
+      const recCounts = allEvals.reduce((acc, e) => { acc[e.recommendation] = (acc[e.recommendation] || 0) + 1; return acc; }, {});
+      const consensusRec = Object.entries(recCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || recommendation;
+
+      if (consensusRec === "Shortlist") {
+        advanceApplicationStage(ev.applicationId, "Shortlisted", "Shortlisted");
+        pushNotification("startup", {
+          type: "shortlist",
+          message: `Great news! Your application for ${ev.challengeTitle} has been shortlisted — Average score: ${avgScore}/100`,
+          link: "/startup/applications",
+        });
+      } else if (consensusRec === "Waitlist") {
+        updateApplication(ev.applicationId, { status: "Waitlisted" });
+        pushNotification("startup", {
+          type: "shortlist",
+          message: `Your application for ${ev.challengeTitle} has been waitlisted — Average score: ${avgScore}/100`,
+          link: "/startup/applications",
+        });
+      } else if (consensusRec === "Reject") {
+        updateApplication(ev.applicationId, { status: "Not Selected" });
+        pushNotification("startup", {
+          type: "shortlist",
+          message: `Your application for ${ev.challengeTitle} was not selected — Average score: ${avgScore}/100`,
+          link: "/startup/applications",
+        });
+      }
+
+      pushNotification("government", {
+        type: "evaluation",
+        message: `All evaluations complete for ${ev.challengeTitle} — ${ev.startupName} · Avg: ${avgScore}/100 · ${consensusRec}`,
+        link: "/government/evaluation",
       });
-    } else if (recommendation === "Waitlist") {
-      updateApplication(ev.applicationId, { status: "Waitlisted" });
-      pushNotification("startup", {
-        type: "shortlist",
-        message: `Your application for ${ev.challengeTitle} has been waitlisted`,
-        link: "/startup/applications",
-      });
-    } else if (recommendation === "Reject") {
-      updateApplication(ev.applicationId, { status: "Not Selected" });
-      pushNotification("startup", {
-        type: "shortlist",
-        message: `Your application for ${ev.challengeTitle} was not selected this time`,
-        link: "/startup/applications",
+    } else {
+      // Only one evaluator done — notify government
+      pushNotification("government", {
+        type: "evaluation",
+        message: `Evaluator ${ev.evaluatorName} completed evaluation for ${ev.challengeTitle} — ${ev.startupName} (${totalScore}/100). Awaiting second evaluator.`,
+        link: "/government/evaluation",
       });
     }
   }
-  pushNotification("government", {
-    type: "evaluation",
-    message: `Evaluation completed for ${ev.challengeTitle} — ${ev.startupName} (${totalScore}/100, ${recommendation})`,
-    link: "/government/evaluation",
-  });
+
   return { ok: true, evaluation: updated };
 }
 
