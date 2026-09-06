@@ -706,6 +706,7 @@ export function addPilotRisk(pilotId, { description, likelihood, mitigationOwner
       description: description || "",
       likelihood: likelihood || "Medium",
       mitigationOwner: mitigationOwner || "",
+      status: "Open",
     };
     return { ...p, risks: [...risks, newRisk] };
   });

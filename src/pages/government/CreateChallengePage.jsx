@@ -36,12 +36,13 @@ export default function CreateChallengePage() {
   const [form, setForm] = useState({
     title: "", department: "", location: "", description: "", currentSituation: "", expectedOutcome: "", targetUsers: "",
     budget: "", pilotDuration: "", targetGeo: "", capabilities: "", constraints: "",
-    // New fields — Feature 1 & 2
+    // Compliance & eligibility toggles
     ipOwnership: "",
     dataLocalization: false,
     cyberChecklist: Array(CYBER_ITEMS.length).fill(false),
     waiveTurnoverRequirement: false,
-    // Feature 3 — Pilot Mode
+    waiveGovtExperienceRequirement: false,
+    // Pilot Mode
     pilotMode: "full",
   });
 
@@ -82,12 +83,13 @@ export default function CreateChallengePage() {
         governmentSupport: user?.department ? `Coordination via ${user.department}` : "Departmental coordination",
         deliverables: "Functional pilot, periodic reports, final impact assessment",
       },
-      // New fields
+      // Compliance fields
       ipOwnership: form.ipOwnership || "Not specified",
       dataLocalization: form.dataLocalization,
       cyberChecklist: form.cyberChecklist,
       waiveTurnoverRequirement: form.waiveTurnoverRequirement,
-      // Feature 3
+      waiveGovtExperienceRequirement: form.waiveGovtExperienceRequirement,
+      // Pilot Mode
       pilotMode: form.pilotMode || "full",
     });
     navigate("/government/challenges");
@@ -378,7 +380,7 @@ export default function CreateChallengePage() {
                 </div>
               </div>
 
-              {/* Waive Turnover Requirement — Feature 2 */}
+              {/* Waive Turnover Requirement */}
               <div style={{ marginTop: 20, padding: "16px 18px", background: form.waiveTurnoverRequirement ? "#dbeafe" : "#fff", border: `2px solid ${form.waiveTurnoverRequirement ? "#3b82f6" : "#bfdbfe"}`, borderRadius: "var(--radius-md)", transition: "all 0.25s" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
                   <div style={{ width: 32, height: 32, background: form.waiveTurnoverRequirement ? "#2563eb" : "#e2e8f0", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.25s" }}>
@@ -404,14 +406,51 @@ export default function CreateChallengePage() {
                         <span style={{
                           position: "absolute", inset: 0, borderRadius: 13,
                           background: form.waiveTurnoverRequirement ? "#2563eb" : "#cbd5e1",
-                          transition: "background 0.25s",
-                          display: "block"
+                          transition: "background 0.25s", display: "block"
                         }} />
                         <span style={{
                           position: "absolute", top: 3, left: form.waiveTurnoverRequirement ? 26 : 3,
                           width: 20, height: 20, borderRadius: "50%", background: "#fff",
-                          transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-                          display: "block"
+                          transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)", display: "block"
+                        }} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Waive Prior Govt-Experience Requirement */}
+              <div style={{ marginTop: 12, padding: "16px 18px", background: form.waiveGovtExperienceRequirement ? "#fef3c7" : "#fff", border: `2px solid ${form.waiveGovtExperienceRequirement ? "#f59e0b" : "#bfdbfe"}`, borderRadius: "var(--radius-md)", transition: "all 0.25s" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                  <div style={{ width: 32, height: 32, background: form.waiveGovtExperienceRequirement ? "#f59e0b" : "#e2e8f0", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.25s" }}>
+                    <Shield size={15} color={form.waiveGovtExperienceRequirement ? "#fff" : "var(--text-muted)"} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: form.waiveGovtExperienceRequirement ? "#92400e" : "var(--text-primary)" }}>
+                          Waive Prior Government-Experience Requirement
+                        </div>
+                        <div style={{ fontSize: "0.78rem", color: form.waiveGovtExperienceRequirement ? "#d97706" : "var(--text-muted)", marginTop: 3, lineHeight: 1.5 }}>
+                          Allows startups with no prior government project experience to apply. Opens the challenge to first-time govtech innovators.
+                        </div>
+                      </div>
+                      <label style={{ position: "relative", width: 48, height: 26, cursor: "pointer", flexShrink: 0, marginLeft: 16 }}>
+                        <input
+                          type="checkbox"
+                          checked={form.waiveGovtExperienceRequirement}
+                          onChange={e => update("waiveGovtExperienceRequirement", e.target.checked)}
+                          style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+                        />
+                        <span style={{
+                          position: "absolute", inset: 0, borderRadius: 13,
+                          background: form.waiveGovtExperienceRequirement ? "#f59e0b" : "#cbd5e1",
+                          transition: "background 0.25s", display: "block"
+                        }} />
+                        <span style={{
+                          position: "absolute", top: 3, left: form.waiveGovtExperienceRequirement ? 26 : 3,
+                          width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                          transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)", display: "block"
                         }} />
                       </label>
                     </div>
@@ -533,6 +572,17 @@ export default function CreateChallengePage() {
                   border: `1px solid ${form.waiveTurnoverRequirement ? "#fcd34d" : "#e2e8f0"}`
                 }}>
                   ⚡ Turnover Requirement: {form.waiveTurnoverRequirement ? "Waived for startups" : "Standard requirement"}
+                </span>
+
+                {/* Govt-Experience Waiver Badge */}
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px",
+                  background: form.waiveGovtExperienceRequirement ? "#fef3c7" : "#f1f5f9",
+                  color: form.waiveGovtExperienceRequirement ? "#92400e" : "var(--text-muted)",
+                  borderRadius: 20, fontWeight: 600, fontSize: "0.8rem",
+                  border: `1px solid ${form.waiveGovtExperienceRequirement ? "#fcd34d" : "#e2e8f0"}`
+                }}>
+                  🏛️ Govt-Experience: {form.waiveGovtExperienceRequirement ? "Waived (first-timers welcome)" : "Standard requirement"}
                 </span>
 
                 {/* Cyber Checklist Badge */}

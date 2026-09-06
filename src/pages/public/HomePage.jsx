@@ -48,6 +48,10 @@ export default function HomePage() {
             <button className="btn btn-primary btn-lg" onClick={() => navigate("/public-challenges")}>
               Explore Challenges <ArrowRight size={18} />
             </button>
+            <button className="btn btn-secondary btn-lg" onClick={() => navigate("/journey")}
+              style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              🗺️ Full Journey Preview
+            </button>
             <button className="btn btn-secondary btn-lg" onClick={() => navigate("/login/government")}>
               For Government
             </button>

@@ -617,7 +617,7 @@ const guides = [
 
 const videos = [
   { title: "Introduction to Sahyog-Setu", desc: "Overview of the platform, its mandate and how it connects government to startups.", duration: "8 min" },
-  { title: "How to Create a Challenge", desc: "Walkthrough of the 4-step challenge creation form with best practices.", duration: "12 min" },
+  { title: "How to Create a Challenge", desc: "Walkthrough of the 4-step challenge creation form — covering problem definition, sandbox vs full pilot mode, IP ownership, waiver toggles and KPI setting.", duration: "12 min" },
   { title: "Evaluating Applications: A Practical Guide", desc: "Training for evaluators on the scoring framework and conflict of interest procedures.", duration: "18 min" },
   { title: "Pilot Management & KPI Tracking", desc: "How to set up, monitor and report on a controlled government pilot.", duration: "15 min" },
 ];

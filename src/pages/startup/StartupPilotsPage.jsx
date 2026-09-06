@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useAuth } from "../../context/AuthContext";
 import { usePilots } from "../../lib/store";
-import { CheckCircle, Activity, Circle, ArrowRight } from "lucide-react";
+import { CheckCircle, Activity, Circle, ArrowRight, AlertTriangle, Eye } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { pilotKpiChartData } from "../../data/dummyData";
 
@@ -152,6 +152,69 @@ export default function StartupPilotsPage() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* ── Read-only Risk Register (Transparency) ── */}
+      {(pilot.risks || []).length > 0 && (
+        <div className="card card-padded" style={{ marginTop: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+            <div style={{ width: 34, height: 34, background: "#fef3c7", border: "1.5px solid #fcd34d", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <AlertTriangle size={17} color="#d97706" />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "0.95rem" }}>
+                Pilot Risk Register
+                <span style={{ marginLeft: 8, fontSize: "0.73rem", background: "#fef3c7", color: "#d97706", padding: "2px 8px", borderRadius: 12, fontWeight: 700, border: "1px solid #fcd34d" }}>
+                  {(pilot.risks || []).length} risks
+                </span>
+              </h3>
+              <p style={{ margin: "2px 0 0", fontSize: "0.78rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 5 }}>
+                <Eye size={12} /> Flagged by your government pilot coordinator — read-only view
+              </p>
+            </div>
+          </div>
+
+          <div style={{ padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "var(--radius-md)", marginBottom: 14, fontSize: "0.8rem", color: "#92400e", lineHeight: 1.6 }}>
+            These risks were identified by the government team. To discuss mitigation or update status, contact your pilot coordinator directly.
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {(pilot.risks || []).map((risk) => {
+              const LIKELIHOOD_COLOR = { Low: { bg: "#dcfce7", color: "#16a34a", border: "#86efac", dot: "#16a34a" }, Medium: { bg: "#fef3c7", color: "#d97706", border: "#fcd34d", dot: "#d97706" }, High: { bg: "#fee2e2", color: "#dc2626", border: "#fca5a5", dot: "#dc2626" } };
+              const STATUS_STYLE = { Open: { bg: "#fee2e2", color: "#dc2626", border: "#fca5a5" }, Mitigated: { bg: "#fef3c7", color: "#d97706", border: "#fcd34d" }, Closed: { bg: "#dcfce7", color: "#16a34a", border: "#86efac" } };
+              const ls = LIKELIHOOD_COLOR[risk.likelihood] || LIKELIHOOD_COLOR.Medium;
+              const ss = STATUS_STYLE[risk.status || "Open"] || STATUS_STYLE.Open;
+              const isClosed = risk.status === "Closed";
+              return (
+                <div key={risk.id} style={{
+                  padding: "14px 16px", background: isClosed ? "#f8fafc" : "#fff",
+                  borderRadius: "var(--radius-md)", border: `1px solid ${ls.border}`,
+                  borderLeft: `4px solid ${ls.dot}`, opacity: isClosed ? 0.65 : 1,
+                }}>
+                  <p style={{ margin: "0 0 10px", fontSize: "0.875rem", color: isClosed ? "var(--text-muted)" : "var(--text-primary)", lineHeight: 1.6, textDecoration: isClosed ? "line-through" : "none" }}>
+                    {risk.description}
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    {/* Likelihood badge */}
+                    <span style={{ fontSize: "0.73rem", fontWeight: 700, padding: "2px 10px", borderRadius: 20, background: ls.bg, color: ls.color, border: `1px solid ${ls.border}` }}>
+                      {risk.likelihood} Likelihood
+                    </span>
+                    {/* Status badge */}
+                    <span style={{ fontSize: "0.73rem", fontWeight: 700, padding: "2px 10px", borderRadius: 20, background: ss.bg, color: ss.color, border: `1px solid ${ss.border}` }}>
+                      {risk.status || "Open"}
+                    </span>
+                    {/* Owner */}
+                    {risk.mitigationOwner && (
+                      <span style={{ fontSize: "0.73rem", color: "var(--text-muted)", padding: "2px 10px", borderRadius: 20, background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                        Owner: {risk.mitigationOwner}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

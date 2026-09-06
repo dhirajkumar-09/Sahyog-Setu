@@ -10,6 +10,12 @@ const LIKELIHOOD_STYLE = {
   High:   { bg: "#fee2e2", color: "#dc2626", border: "#fca5a5", dot: "#dc2626" },
 };
 
+const RISK_STATUS_STYLE = {
+  Open:      { bg: "#fee2e2", color: "#dc2626", border: "#fca5a5", label: "Open" },
+  Mitigated: { bg: "#fef3c7", color: "#d97706", border: "#fcd34d", label: "Mitigated" },
+  Closed:    { bg: "#dcfce7", color: "#16a34a", border: "#86efac", label: "Closed" },
+};
+
 function RiskRegister({ pilot }) {
   const risks = pilot.risks || [];
   const [newDesc, setNewDesc] = useState("");
@@ -26,6 +32,10 @@ function RiskRegister({ pilot }) {
     setAdding(false);
   };
 
+  const openCount = risks.filter(r => !r.status || r.status === "Open").length;
+  const mitigatedCount = risks.filter(r => r.status === "Mitigated").length;
+  const closedCount = risks.filter(r => r.status === "Closed").length;
+
   return (
     <div style={{ marginTop: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -37,6 +47,14 @@ function RiskRegister({ pilot }) {
               {risks.length} risks
             </span>
           </h4>
+          {/* Status summary pills */}
+          {risks.length > 0 && (
+            <div style={{ display: "flex", gap: 6, marginLeft: 4 }}>
+              {openCount > 0 && <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "1px 7px", borderRadius: 10, background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5" }}>{openCount} Open</span>}
+              {mitigatedCount > 0 && <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "1px 7px", borderRadius: 10, background: "#fef3c7", color: "#d97706", border: "1px solid #fcd34d" }}>{mitigatedCount} Mitigated</span>}
+              {closedCount > 0 && <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "1px 7px", borderRadius: 10, background: "#dcfce7", color: "#16a34a", border: "1px solid #86efac" }}>{closedCount} Closed</span>}
+            </div>
+          )}
         </div>
         {!adding && (
           <button
@@ -59,8 +77,15 @@ function RiskRegister({ pilot }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {risks.map((risk) => {
           const ls = LIKELIHOOD_STYLE[risk.likelihood] || LIKELIHOOD_STYLE.Medium;
+          const ss = RISK_STATUS_STYLE[risk.status] || RISK_STATUS_STYLE.Open;
+          const isClosed = risk.status === "Closed";
           return (
-            <div key={risk.id} style={{ padding: "14px 16px", background: "#fff", borderRadius: "var(--radius-md)", border: `1px solid ${ls.border}`, borderLeft: `4px solid ${ls.dot}` }}>
+            <div key={risk.id} style={{
+              padding: "14px 16px", background: isClosed ? "#f8fafc" : "#fff",
+              borderRadius: "var(--radius-md)", border: `1px solid ${ls.border}`,
+              borderLeft: `4px solid ${ls.dot}`, opacity: isClosed ? 0.7 : 1,
+              transition: "opacity 0.2s",
+            }}>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <div style={{ flex: 1 }}>
                   <textarea
@@ -69,8 +94,9 @@ function RiskRegister({ pilot }) {
                     onChange={e => updatePilotRisk(pilot.id, risk.id, { description: e.target.value })}
                     style={{
                       width: "100%", border: "none", background: "transparent", resize: "none",
-                      fontFamily: "inherit", fontSize: "0.875rem", color: "var(--text-primary)",
+                      fontFamily: "inherit", fontSize: "0.875rem", color: isClosed ? "var(--text-muted)" : "var(--text-primary)",
                       lineHeight: 1.6, outline: "none", padding: 0,
+                      textDecoration: isClosed ? "line-through" : "none",
                     }}
                     placeholder="Describe the risk..."
                   />
@@ -92,6 +118,25 @@ function RiskRegister({ pilot }) {
                       </select>
                       <ChevronDown size={11} color={ls.color} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
                     </div>
+
+                    {/* Status dropdown */}
+                    <div style={{ position: "relative" }}>
+                      <select
+                        value={risk.status || "Open"}
+                        onChange={e => updatePilotRisk(pilot.id, risk.id, { status: e.target.value })}
+                        style={{
+                          appearance: "none", padding: "3px 24px 3px 10px",
+                          background: ss.bg, color: ss.color, border: `1px solid ${ss.border}`,
+                          borderRadius: 20, fontSize: "0.75rem", fontWeight: 700, cursor: "pointer",
+                        }}
+                      >
+                        <option value="Open">Open</option>
+                        <option value="Mitigated">Mitigated</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+                      <ChevronDown size={11} color={ss.color} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                    </div>
+
                     {/* Mitigation Owner */}
                     <input
                       value={risk.mitigationOwner}

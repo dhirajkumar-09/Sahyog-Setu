@@ -7,6 +7,7 @@ import { Compass } from "lucide-react";
 const HomePage = lazy(() => import("./pages/public/HomePage"));
 const ChallengeDetailsPage = lazy(() => import("./pages/public/ChallengeDetailsPage"));
 const PublicChallengesPage = lazy(() => import("./pages/public/PublicChallengesPage"));
+const JourneyPreviewPage = lazy(() => import("./pages/public/JourneyPreviewPage"));
 
 // Auth
 const GovernmentLoginPage = lazy(() => import("./pages/auth/GovernmentLoginPage"));
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/public-challenges" element={<PublicChallengesPage />} />
         <Route path="/challenge/:id" element={<ChallengeDetailsPage />} />
+        <Route path="/journey" element={<JourneyPreviewPage />} />
 
         {/* Auth */}
         <Route path="/login/government" element={<GovernmentLoginPage />} />
